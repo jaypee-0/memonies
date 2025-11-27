@@ -31,7 +31,7 @@ import {
 import AsyncStorage from "@react-native-async-storage/async-storage";
 import axios from "axios";
 
-const url = `https://api.memonies.app`
+const url = `https://api.credx.ng`
 
 // Queries
 export const fetchOrganizations = async () => {

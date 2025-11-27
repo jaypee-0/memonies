@@ -260,10 +260,6 @@ function RootNavigator() {
       component: LoginForgot,
     },
     {
-      name: 'Mandate',
-      component: Mandate,
-    },
-    {
       name: 'DeleteReason',
       component: DeleteReason,
     },
