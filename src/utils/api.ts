@@ -39,7 +39,7 @@ import envs from '@/utils/envs';
 const API_BASE_URL =
   (envs as any)?.EXPO_PUBLIC_STAGING_API_BASE_URI ??
   (envs as any)?.EXPO_PUBLIC_API_BASE_URI ??
-  'https://api.memonies.app';
+  'https://api.credx.ng';
 
 const url = API_BASE_URL;
 
