@@ -78,15 +78,15 @@ export function formatDateLong(txt: string) {
     return humanReadableDate;
 }
 
-export function generateCreditLimitLabels(creditLimit:number) {
+export function generatePayoutMilestoneLabels(targetAmount:number) {
     const labels = [];
-    const step = 100000; // Step of ₦100k
+    const step = 100000; // ₦100k increments
   
-    for (let i = 0; i <= creditLimit; i += step) {
+    for (let i = 0; i <= targetAmount; i += step) {
       if (i >= 1000000) {
-        labels.push(`₦${(i / 1000000).toFixed(1)}M`); // Format millions with 'M'
+        labels.push(`₦${(i / 1000000).toFixed(1)}M`);
       } else {
-        labels.push(`₦${i / 1000}k`); // Format thousands with 'k'
+        labels.push(`₦${i / 1000}k`);
       }
     }
   
@@ -128,3 +128,40 @@ export function getPayoutStatusBorderColor(text: string) {
       return "border-[#FF3A4460]";
     }
   }
+
+const legacyLoanKeywords = ['loan', 'advance', 'credit', 'repayment'];
+
+export const describeTransactionPurpose = (transaction: any) => {
+    const toLower = (value?: string) => (value ? value.toLowerCase() : '');
+    const purpose = toLower(transaction?.purpose);
+    const category = toLower(transaction?.transactionType ?? transaction?.meta?.transactionType);
+    const channel = toLower(transaction?.channel ?? transaction?.meta?.channel);
+    const combined = `${purpose} ${category} ${channel}`;
+    const includes = (keyword: string) => combined.includes(keyword);
+  
+    if (legacyLoanKeywords.some((keyword) => includes(keyword))) {
+      return 'Daily salary payout';
+    }
+    if (includes('payout') || includes('salary')) {
+      return 'Daily salary payout';
+    }
+    if (includes('fund') || includes('topup') || includes('wallet')) {
+      return 'Employer wallet funding';
+    }
+    if (includes('withdraw') || includes('bank') || includes('transfer')) {
+      return 'Withdrawal';
+    }
+    if (includes('card') || includes('verification')) {
+      return 'Card verification';
+    }
+    if (includes('attendance') || includes('clock')) {
+      return 'Attendance bonus';
+    }
+  
+    return (
+      transaction?.purpose ??
+      transaction?.transactionType ??
+      transaction?.meta?.transactionType ??
+      'Transaction'
+    );
+  };

@@ -18,7 +18,7 @@ export { default as BackIcon } from './BackIcon';
 export { default as GlobalIcon } from './Cards/GlobalIcon';
 export { default as SafeIcon } from './Cards/Safe';
 export { default as ZeroIcon } from './Cards/Zero';
-export { default as LoanBagIcon } from './LoanBagIcon';
+export { default as PayoutBagIcon } from './PayoutBagIcon';
 
-export { default as LoanApprovalIcon } from './LoanApprovalIcon';
-export { default as LoanDeclineIcon } from './LoanDeclineIcon';
+export { default as PayoutApprovalIcon } from './PayoutApprovalIcon';
+export { default as PayoutDeclineIcon } from './PayoutDeclineIcon';

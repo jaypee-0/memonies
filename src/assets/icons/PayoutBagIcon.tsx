@@ -36,5 +36,5 @@ const SvgComponent = ({ focus, width, height }: Props) => (
   </Svg>
 );
 
-const LoanBagIcon = memo(SvgComponent);
-export default LoanBagIcon;
+const PayoutBagIcon = memo(SvgComponent);
+export default PayoutBagIcon;

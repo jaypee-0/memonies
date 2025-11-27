@@ -36,5 +36,5 @@ const SvgComponent = ({ focus, width, height }: Props) => (
   </Svg>
 );
 
-const LoanApprovalIcon = memo(SvgComponent);
-export default LoanApprovalIcon;
+const PayoutApprovalIcon = memo(SvgComponent);
+export default PayoutApprovalIcon;

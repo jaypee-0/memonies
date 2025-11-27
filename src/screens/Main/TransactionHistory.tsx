@@ -11,32 +11,18 @@ import tw from "@/lib/tailwind";
 import { useDeviceContext } from "twrnc";
 import Layout from "@/components/Layout";
 import RNText from "@/components/Text";
-import { formatAmount, formatDate, getTransactionStatusTextColor } from "@/utils";
+import {
+  describeTransactionPurpose,
+  formatAmount,
+  formatDate,
+  getTransactionStatusTextColor,
+} from "@/utils";
 import { useSelector } from "react-redux";
 import { selectUser } from "@/redux/slices/authSlice";
 import { useQuery } from "react-query";
 import { getTransactionHistoryApi } from "@/utils/api";
 import RNScrollView from "@/components/ScrollView";
 import { colors } from "@/theme/colors";
-import AnimatedLottieView from "lottie-react-native";
-
-const derivePurposeLabel = (transaction: any) => {
-  const purpose = transaction?.purpose?.toLowerCase?.() ?? "";
-  if (purpose.includes("loan")) {
-    return "Daily salary payout";
-  }
-  if (purpose.includes("repayment")) {
-    return "Wallet funding";
-  }
-  if (purpose.includes("credit")) {
-    return "Employer wallet credit";
-  }
-  return (
-    transaction?.purpose ??
-    transaction?.transactionType ??
-    "Transaction"
-  );
-};
 
 const TransactionHistory = () => {
   const navigation: any = useNavigation();
@@ -94,10 +80,10 @@ const TransactionHistory = () => {
               }
             >
               <View style={tw`flex-row items-center max-w-[62%]`}>
-                <Image source={require("@/assets/loans/loanrepayment.png")} />
+                <Image source={require("@/assets/eds/payout.png")} />
                 <View style={tw`ml-4`}>
                   <RNText style={tw``}>
-                    {derivePurposeLabel(transaction)}
+                    {describeTransactionPurpose(transaction)}
                   </RNText>
                   <RNText size="sm" theme="secondary">
                     {formatDate(transaction?.createdAt)}

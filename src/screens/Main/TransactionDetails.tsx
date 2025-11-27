@@ -2,7 +2,7 @@ import { View, Alert, TouchableOpacity } from "react-native";
 import React, { useEffect, useMemo, useRef, useState } from "react";
 import { useNavigation } from "@react-navigation/native";
 import RNText from "@/components/Text";
-import { formatAmount } from "@/utils";
+import { describeTransactionPurpose, formatAmount } from "@/utils";
 import { AntDesign, Ionicons } from "@expo/vector-icons";
 import RNButton from "@/components/Button";
 import tw from "@/lib/tailwind";
@@ -67,24 +67,6 @@ const formatDateTime = (value?: string) => {
   } catch (error) {
     return value;
   }
-};
-
-const derivePurposeLabel = (transaction: any) => {
-  const purpose = transaction?.purpose?.toLowerCase?.() ?? "";
-  if (purpose.includes("loan")) {
-    return "Daily salary payout";
-  }
-  if (purpose.includes("repayment")) {
-    return "Wallet funding";
-  }
-  if (purpose.includes("credit")) {
-    return "Employer wallet credit";
-  }
-  return (
-    transaction?.purpose ??
-    transaction?.transactionType ??
-    "Transaction"
-  );
 };
 
 const TransactionDetails = ({ route }: any) => {
@@ -170,7 +152,7 @@ const TransactionDetails = ({ route }: any) => {
 
         <View style={tw`flex-1 w-[90%] mx-auto -mt-14 bg-white px-4 py-6 rounded-3xl shadow-lg`}>
           <RNText theme="black" font="outfitmedium" align="center" style={tw`text-lg`}>
-            {derivePurposeLabel(transaction)}
+            {describeTransactionPurpose(transaction)}
           </RNText>
           <TouchableOpacity
             onPress={() => copyToClipboard(transaction?.id ?? "")}

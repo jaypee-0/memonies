@@ -1,37 +1,47 @@
 import {
-    ADD_KYC, ADD_NIN, ADD_BVN,
-    REGISTER, LOGIN, VERIFY_SIGN_UP_OTP,
-    CREATE_T_PIN,
-    ORGANIZATION,
-    JOIN_ORGANIZATION,
-    BANK_LIST,
-    GET_WALLET_INFO,
-    FORGOT,
-    RESET,
-    WITHDRAW,
-    ACTIVATE_MANDATE,
-    GET_WORK,
-    FUNDS_SENT,
-    ADD_TOKEN,
-    INVITE_COMPANY,
-    SEND_FORGOT_TOKEN,
-    ADD_SECONDARYNO,
-    VALIDATE_BANKACCOUNT,
-    TRANSACTIONS,
-    ADD_CARD,
-    EDS_SUMMARY,
-    EDS_ATTENDANCE,
-    EDS_CLOCK_IN,
-    EDS_CLOCK_OUT,
-    EDS_PAYOUTS,
-    EDS_TRIGGER_PAYOUT,
-    EDS_COMPANY_EMPLOYEES,
-    EDS_INVITE_CODE,
-} from '@/services/url'
-import AsyncStorage from "@react-native-async-storage/async-storage";
-import axios from "axios";
+  ADD_BVN,
+  ADD_CARD,
+  ADD_KYC,
+  ADD_NIN,
+  ADD_SECONDARYNO,
+  ADD_TOKEN,
+  BANK_LIST,
+  CREATE_T_PIN,
+  EDS_ATTENDANCE,
+  EDS_CLOCK_IN,
+  EDS_CLOCK_OUT,
+  EDS_COMPANY_EMPLOYEES,
+  EDS_PAYOUTS,
+  EDS_SUMMARY,
+  EDS_TRIGGER_PAYOUT,
+  FORGOT,
+  FUNDS_SENT,
+  GET_WALLET_INFO,
+  GET_WORK,
+  INVITE_COMPANY,
+  JOIN_ORGANIZATION,
+  LOGIN,
+  ORGANIZATION,
+  REGISTER,
+  RESET,
+  SEND_FORGOT_TOKEN,
+  TRANSACTIONS,
+  VALIDATE_BANKACCOUNT,
+  VERIFY_SIGN_UP_OTP,
+  WITHDRAW,
+  ACTIVATE_MANDATE,
+} from '@/services/url';
+import AsyncStorage from '@react-native-async-storage/async-storage';
+import axios from 'axios';
 
-const url = `https://api.credx.ng`
+import envs from '@/utils/envs';
+
+const API_BASE_URL =
+  (envs as any)?.EXPO_PUBLIC_STAGING_API_BASE_URI ??
+  (envs as any)?.EXPO_PUBLIC_API_BASE_URI ??
+  'https://api.memonies.app';
+
+const url = API_BASE_URL;
 
 // Queries
 export const fetchOrganizations = async () => {
@@ -238,15 +248,6 @@ export const inviteCompanyApi = async (data: any) => {
     const response = await axios.post(`${url}${INVITE_COMPANY}`, data, { headers });
     return response?.data;
 }
-export const applyLoanApi = async (data: any) => {
-    const token = await AsyncStorage.getItem('token')
-    const headers = {
-        'Authorization': `Bearer ${token}`,
-        'Content-Type': 'application/json'
-    }
-    const response = await axios.post(`${url}${APPLY_LOAN}`, data, { headers });
-    return response?.data;
-}
 export const addCardApi = async (data: any) => {
     const token = await AsyncStorage.getItem('token')
     const headers = {
@@ -254,24 +255,6 @@ export const addCardApi = async (data: any) => {
         'Content-Type': 'application/json'
     }
     const response = await axios.post(`${url}${ADD_CARD}`, data, { headers });
-    return response?.data;
-}
-export const loanSummary = async (data: any) => {
-    const token = await AsyncStorage.getItem('token')
-    const headers = {
-        'Authorization': `Bearer ${token}`,
-        'Content-Type': 'application/json'
-    }
-    const response = await axios.post(`${url}${LOAN_CHECK}`, data, { headers });
-    return response?.data;
-}
-export const repayApi = async (data: any) => {
-    const token = await AsyncStorage.getItem('token')
-    const headers = {
-        'Authorization': `Bearer ${token}`,
-        'Content-Type': 'application/json'
-    }
-    const response = await axios.post(`${url}${REPAY_LOAN}`, data, { headers });
     return response?.data;
 }
 export const validateAccountApi = async (data: any) => {

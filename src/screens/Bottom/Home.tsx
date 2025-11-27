@@ -1,705 +1,544 @@
+import React from "react";
 import {
-  ActivityIndicator,
-  Alert,
-  Image,
   RefreshControl,
   TouchableOpacity,
   View,
 } from "react-native";
-import React, { useEffect, useState } from "react";
-import Layout from "@/components/Layout";
-import RNButton from "@/components/Button";
-import { useAppDispatch, useAppSelector } from "@/hooks";
-import { colors } from "@/theme/colors";
-import tw from "@/lib/tailwind";
-import { useDeviceContext } from "twrnc";
 import { useNavigation } from "@react-navigation/native";
-import { BottomSheetModal } from "@gorhom/bottom-sheet";
-import { selectUser, setCardDetails } from "@/redux/slices/authSlice";
-import RNText from "@/components/Text";
+import { Feather, Ionicons, MaterialCommunityIcons } from "@expo/vector-icons";
+
+import Layout from "@/components/Layout";
 import RNScrollView from "@/components/ScrollView";
-import { AntDesign, Feather, FontAwesome, Ionicons } from "@expo/vector-icons";
-import { useMutation, useQuery } from "react-query";
-import {
-  activateMandate,
-  getLoanEligibility,
-  getLoanHistory,
-  getWalletInfo,
-  getWorkApi,
-} from "@/utils/api";
-import { copyToClipboard, formatAmount } from "@/utils";
-import AnimatedLottieView from "lottie-react-native";
-import { useIsFocused } from "@react-navigation/native";
-import {
-  responsiveScreenHeight,
-  responsiveScreenWidth,
-} from "react-native-responsive-dimensions";
-import { usePushNotification } from "@/hooks/usePushNotification";
-import axios from "axios";
+import RNText from "@/components/Text";
+import RNButton from "@/components/Button";
+import { useDeviceContext } from "twrnc";
+import tw from "@/lib/tailwind";
+import { useAppDispatch, useAppSelector } from "@/hooks";
+import { selectUser } from "@/redux/slices/authSlice";
+import { colors } from "@/theme/colors";
+import { formatAmount, formatDateLong } from "@/utils/formatting";
+import { copyToClipboard } from "@/utils";
+import { setRole, UserRole } from "@/redux/slices/edsSlice";
+import { useEdsBootstrap } from "@/hooks/useEdsBootstrap";
+import EdsGuidelines from "@/data/EdsGuidelines";
 
-export const loanTranches = [
-  { amount: 0, disbursed: true },
-  { amount: 200000, disbursed: false },
-  { amount: 400000, disbursed: false },
-  { amount: 600000, disbursed: false },
-  { amount: 800000, disbursed: false },
-  { amount: 1000000, disbursed: false },
-];
+type QuickAction = {
+  label: string;
+  description: string;
+  icon: React.ReactNode;
+  onPress: () => void;
+};
+
+const SectionContainer = ({
+  title,
+  actionText,
+  onActionPress,
+  children,
+}: {
+  title: string;
+  actionText?: string;
+  onActionPress?: () => void;
+  children: React.ReactNode;
+}) => (
+  <View style={tw`mt-6`}>
+    <View style={tw`flex-row items-center justify-between mb-3`}>
+      <RNText font="outfitsemi" theme="black">
+        {title}
+      </RNText>
+      {actionText && onActionPress && (
+        <TouchableOpacity onPress={onActionPress}>
+          <RNText theme="primary" size="sm">
+            {actionText}
+          </RNText>
+        </TouchableOpacity>
+      )}
+    </View>
+    {children}
+  </View>
+);
+
 const Home = () => {
-  usePushNotification();
-  const dispatch = useAppDispatch();
-  const isFocused = useIsFocused();
-  const navigation: any = useNavigation();
   useDeviceContext(tw);
-  const selectedUser = useAppSelector(selectUser);
-  const [toggleBalance, settoggleBalance] = useState(false);
-  const [mandateLoading, setmandateLoading] = useState(false);
-
-  let links = [
-    // {
-    //   name: "Complete your profile",
-    //   text: "Upgrade your profile to apply for a loan",
-    //   icon: <AntDesign name="arrowup" size={24} color="#006F2F" />,
-    //   url: () => navigation.navigate("PersonalDetails"),
-    //   bgColor: "#006F2F",
-    //   buttonText: "Go",
-    // },
-    {
-      name: "Get a loan in 3 minutes",
-      text: "",
-      //text: "Up to N1,000,000 available to your account",
-      icon: <FontAwesome name="bolt" size={24} color="#DB1716" />,
-      url: () => navigation.navigate("Loans"),
-      bgColor: "#DB1716",
-      buttonText: "Apply",
-    },
-  ];
-
+  const navigation = useNavigation<any>();
+  const dispatch = useAppDispatch();
+  const user = useAppSelector(selectUser);
   const {
-    data: walletData,
-    isLoading: walletDataLoading,
-    isError: walletDataError,
-    isFetching: walletFetching,
-    refetch: refetchWallet,
-  } = useQuery("walletInfo", getWalletInfo);
-
+    role,
+    todaysEarning,
+    dailyRate,
+    autopayoutTime,
+    autopayoutDestination,
+    autopayoutEnabled,
+    attendance,
+    team,
+    payouts,
+    company,
+    notifications,
+  } = useAppSelector((state) => state.eds);
   const {
-    data: eligibilityData,
-    isLoading: eligibilityLoading,
-    isError: eligibilityError,
-    refetch: refetchEligibility,
-    error,
-  } = useQuery("loanEligibility", getLoanEligibility);
+    refreshAll,
+    summaryQuery,
+    attendanceQuery,
+    payoutsQuery,
+    employeesQuery,
+  } = useEdsBootstrap();
 
-  useEffect(() => {
-    if (walletData) {
-      dispatch(setCardDetails(walletData.data));
-    }
-  }, [walletData]);
+  const refreshing =
+    summaryQuery.isFetching ||
+    attendanceQuery.isFetching ||
+    payoutsQuery.isFetching ||
+    employeesQuery.isFetching;
 
-  const {
-    data: loanHistory,
-    isLoading: historyLoading,
-    error: historyError,
-    isFetching,
-    refetch: refetchLoans,
-  } = useQuery("loanHistory", getLoanHistory);
+  const handleRefresh = React.useCallback(() => {
+    refreshAll();
+  }, [refreshAll]);
 
-  React.useEffect(() => {
-    const unsubscribe = navigation.addListener("tabPress", (e: any) => {
-      refetchWallet();
-      refetchLoans();
-    });
-    return unsubscribe;
-  }, [navigation]);
+  const greetings = user?.firstName ? user.firstName : "there";
+  const todayKey = new Date().toISOString().slice(0, 10);
+  const todayRecord = attendance.find((entry) => entry.date === todayKey);
+  const todaysProgress =
+    dailyRate > 0 ? Math.min(1, todaysEarning / dailyRate) : 0;
+  const autopDestinationLabel =
+    autopayoutDestination === "wallet" ? "Memonies wallet" : "Bank transfer";
+  const upcomingRun = payouts.upcoming[0];
+  const lastRun = payouts.history[0];
+  const recentAttendance = attendance.slice(0, 3);
+  const visibleTeam = team.slice(0, 4);
+  const sevenDayWindow = attendance.slice(0, 7);
+  const presentSeven = sevenDayWindow.filter(
+    (entry) => entry.status === "present"
+  ).length;
+  const inviteCode = company?.inviteCode ?? "N/A";
 
-  const {
-    data: workData,
-    isLoading: workLoading,
-    isError: woorkError,
-    refetch: refetchWork,
-  } = useQuery("workings", getWorkApi);
-  React.useEffect(() => {
-    if (isFocused) {
-      refetchWallet();
-      refetchLoans();
-      refetchEligibility();
-      refetchWork();
-    }
-  }, [isFocused]);
-  const creditLeft = walletData?.data?.credit?.canLoan;
-  const creditTaken = walletData?.data?.credit?.principalDept;
-  const creditLimit = walletData?.data?.eligibility?.amount;
-  const activateMandate01 = useMutation(activateMandate, {
-    onError: (error, context, er) => {
-      if (axios.isAxiosError(error)) {
-        const message = JSON.stringify(error?.response?.data?.message).replace(/"/g, "");
-        console.log("Error", message);
-        if (message?.toLowerCase?.()?.includes("bvn mobile number")) {
-  
-          navigation.navigate("SecondaryPhone", { reason: message });
-        } else {
-          Alert.alert("Error", message);
-        }
-      } else {
-        Alert.alert("Error", "Error, please try again");
-      }
-    },
-    onSuccess: async (data: any) => {
-      console.log(data, "mandate data");
-      navigation.navigate("Mandate", {
-        //instruction: data?.data + fincra,
-        instruction: data?.data,
-      });
-    },
-  });
-
-  async function handleSubmit() {
-    await activateMandate01.mutate({
-      work: String(eligibilityData?.data?.work),
-    });
-  }
-
-  const handleMandate = async () => {
-    setmandateLoading(true);
-    try {
-      await handleSubmit?.();
-      setTimeout(() => {
-        setmandateLoading(false);
-      }, 8000);
-    } catch (err) {
-      setmandateLoading(false);
-      console.log(err, "<-- err");
+  const changeRole = (nextRole: UserRole) => {
+    if (role !== nextRole) {
+      dispatch(setRole(nextRole));
     }
   };
 
-  const handleRefresh = async () => {
-    refetchEligibility();
-    refetchWallet();
-    refetchWork();
-    refetchLoans();
-  };
+  const quickActions: QuickAction[] =
+    role === "employer"
+      ? [
+          {
+            label: "Fund wallet",
+            description: "Top up company balance",
+            icon: (
+              <MaterialCommunityIcons
+                name="bank-transfer"
+                size={20}
+                color={colors.primary}
+              />
+            ),
+            onPress: () => navigation.navigate("SendMoney"),
+          },
+          {
+            label: "Invite team",
+            description: "Copy invite code",
+            icon: (
+              <Feather name="users" size={20} color={colors.primary} />
+            ),
+            onPress: () => copyToClipboard(inviteCode),
+          },
+          {
+            label: "Review attendance",
+            description: "Approve shifts",
+            icon: (
+              <Feather name="check-circle" size={20} color={colors.primary} />
+            ),
+            onPress: () => navigation.navigate("Attendance"),
+          },
+          {
+            label: "Trigger payout",
+            description: `Pay ${team.length} staff`,
+            icon: <Feather name="zap" size={20} color={colors.primary} />,
+            onPress: () => navigation.navigate("Attendance"),
+          },
+        ]
+      : [
+          {
+            label: todayRecord?.clockIn ? "Clock out" : "Clock in",
+            description: "Open attendance",
+            icon: <Feather name="clock" size={20} color={colors.primary} />,
+            onPress: () => navigation.navigate("Attendance"),
+          },
+          {
+            label: "Withdraw funds",
+            description: "Send to bank",
+            icon: (
+              <Feather
+                name="arrow-down-circle"
+                size={20}
+                color={colors.primary}
+              />
+            ),
+            onPress: () => navigation.navigate("SendToBankAccount"),
+          },
+          {
+            label: "View wallet",
+            description: "Cards & history",
+            icon: (
+              <Feather name="credit-card" size={20} color={colors.primary} />
+            ),
+            onPress: () => navigation.navigate("Account"),
+          },
+          {
+            label: "Notifications",
+            description: "Payroll alerts",
+            icon: (
+              <Ionicons
+                name="notifications-outline"
+                size={20}
+                color={colors.primary}
+              />
+            ),
+            onPress: () => navigation.navigate("Notification"),
+          },
+        ];
 
   return (
-    <Layout bg={"#fff"}>
-      <View style={tw` w-full flex-1`}>
-        {/* Navigation bar */}
-        <View
-          style={tw`w-full flex flex-row justify-between items-center rounded-xl pt-2 mt-3 pb-1`}
-        >
-          <View style={tw`flex flex-row items-center`}>
-            <View
-              style={tw`mr-4 rounded-full bg-[#8d8d8d70] h-12 w-12 flex flex-row items-center justify-center`}
-            >
-              <RNText style={tw``} font="outfitmedium">
-                {selectedUser?.firstName?.slice(0, 1) +
-                  selectedUser.lastName.slice(0, 1)}
+    <Layout bg="#F8FCFF">
+      <RNScrollView
+        style={tw`flex-1`}
+        contentContainerStyle={tw`pb-16`}
+        refreshControl={
+          <RefreshControl
+            refreshing={refreshing}
+            colors={[colors.primary]}
+            onRefresh={handleRefresh}
+          />
+        }
+      >
+        <View style={tw`w-full`}>
+          <View style={tw`flex-row items-start justify-between`}>
+            <View>
+              <RNText theme="secondary" size="sm">
+                Hi {greetings},
+              </RNText>
+              <RNText font="outfitsemi" size="lgl">
+                Daily salary control
+              </RNText>
+              <RNText theme="secondary" size="sm" style={tw`mt-1`}>
+                {role === "employer"
+                  ? "Fund, approve, and automate payouts."
+                  : "Track your earnings and daily payouts."}
               </RNText>
             </View>
-            {/* @ts-ignore */}
-            <TouchableOpacity
-              onPress={() => navigation.navigate("PersonalDetails")}
+            <View
+              style={tw`flex-row bg-white border border-[#DDE2EF] rounded-full overflow-hidden`}
             >
-              <RNText style={tw``}>
-                Hey, {selectedUser?.firstName + " " + selectedUser.lastName}
-              </RNText>
-              <View style={tw`flex flex-row gap-x-2`}>
-                {/* <RNText style={tw`text-[#656565]`} size={"sm"}>
-                  {selectedUser?.email ? selectedUser?.email : "Email: N/A"}
-                </RNText> */}
-
-                {/* <TouchableOpacity
-                  style={tw`bg-[#E2FFEC] rounded-full px-3 py-1 flex flex-row items-center gap-x-1`}>
-                  <AntDesign name='checkcircle' size={10} color='#0D8436' />
-                  <RNText style={tw`text-xs text-[#0D8436]`}>{'Tier 1'}</RNText>
-                </TouchableOpacity> */}
-              </View>
-            </TouchableOpacity>
+              {(["employee", "employer"] as UserRole[]).map((type) => {
+                const active = role === type;
+                return (
+                  <TouchableOpacity
+                    key={type}
+                    onPress={() => changeRole(type)}
+                    style={[
+                      tw`px-3 py-1`,
+                      active ? tw`bg-primary` : tw`bg-transparent`,
+                    ]}
+                  >
+                    <RNText
+                      size="sm"
+                      theme={active ? "white" : "secondary"}
+                      font={active ? "outfitsemi" : "outfitregular"}
+                    >
+                      {type === "employee" ? "Employee" : "Employer"}
+                    </RNText>
+                  </TouchableOpacity>
+                );
+              })}
+            </View>
           </View>
-          <Ionicons
-            name="notifications-outline"
-            size={32}
-            color="black"
-            onPress={() => navigation.navigate("Notification")}
-          />
-        </View>
 
-        {/* Main slider */}
-        <RNScrollView
-          horizontal
-          style={tw`mt-3 h-[${responsiveScreenHeight(7)}]`}
-        >
           <View
-            style={tw`mr-3 min-h-[${responsiveScreenHeight(
-              4
-            )}] w-[${responsiveScreenWidth(
-              21
-            )}] flex flex-col justify-between bg-[#EBF4FF] rounded-md p-4 pt-5 pb-2 relative`}
+            style={tw`mt-6 rounded-3xl p-5 ${
+              role === "employer" ? "bg-[#0D1B3D]" : "bg-primary"
+            }`}
           >
-            <Image
-              source={require("@/assets/images/cardicon.png")}
-              style={tw`absolute`}
-            />
-            <View style={tw`w-full`}>
-              <View
-                style={tw`flex flex-row items-center w-full justify-between mb-3`}
-              >
-                <RNText theme="secondary" size="sm">
-                  Balance
+            {role === "employer" ? (
+              <>
+                <RNText theme="white" size="sm">
+                  Company wallet
+                </RNText>
+                <RNText theme="white" font="outfitbold" size="lgl">
+                  ₦{formatAmount(company.walletBalance)}
+                </RNText>
+                <RNText theme="white" size="sm" style={tw`mt-2 opacity-80`}>
+                  Daily obligation ₦{formatAmount(company.dailyObligation)} •{" "}
+                  Auto payout {autopayoutTime}
+                </RNText>
+                {company.walletShortfall > 0 && (
+                  <RNText theme="danger" size="sm" style={tw`mt-2`}>
+                    Wallet shortfall ₦{formatAmount(company.walletShortfall)}.
+                    Fund before {autopayoutTime}.
+                  </RNText>
+                )}
+                <View style={tw`flex-row mt-4`}>
+                  <RNButton
+                    title="Fund wallet"
+                    onPress={() => navigation.navigate("SendMoney")}
+                    style={tw`flex-1 mr-3 bg-white`}
+                    textStyle={tw`text-[#0D1B3D]`}
+                    theme="white"
+                  />
+                  <RNButton
+                    title="Manage team"
+                    onPress={() => navigation.navigate("Attendance")}
+                    style={tw`flex-1 bg-transparent border border-white`}
+                    textStyle={tw`text-white`}
+                    theme="transparent"
+                  />
+                </View>
+              </>
+            ) : (
+              <>
+                <RNText theme="white" size="sm">
+                  Today’s earnings
+                </RNText>
+                <RNText theme="white" font="outfitbold" size="lgl">
+                  ₦{formatAmount(todaysEarning)}
+                </RNText>
+                <RNText theme="white" size="sm" style={tw`mt-1 opacity-80`}>
+                  Daily rate ₦{formatAmount(dailyRate)} • Auto payout{" "}
+                  {autopayoutTime}
+                </RNText>
+                <View style={tw`h-2 bg-white/40 rounded-full mt-4`}>
+                  <View
+                    style={[
+                      tw`h-full bg-white rounded-full`,
+                      { width: `${todaysProgress * 100}%` },
+                    ]}
+                  />
+                </View>
+                <RNText theme="white" size="sm" style={tw`mt-2`}>
+                  Destination: {autopDestinationLabel}
                 </RNText>
                 <RNButton
-                  naked
-                  nakedTextColor="primary"
-                  title="Transaction History"
-                  navigate="TransactionHistory"
-                  style={tw`mt-0`}
-                  textStyle={tw`text-sm text-primary ml-auto`}
+                  title="View attendance"
+                  onPress={() => navigation.navigate("Attendance")}
+                  style={tw`mt-4 bg-white`}
+                  textStyle={tw`text-primary`}
+                  theme="white"
                 />
-              </View>
-              {walletFetching ? (
-                <AnimatedLottieView
-                  source={require("../../assets/animations/dotloader.json")}
-                  style={tw`w-[250px] h-10 absolute -left-[30%] top-6`}
-                  autoPlay
-                  resizeMode="cover"
-                />
-              ) : (
-                <View style={tw`flex flex-row items-center gap-x-2 `}>
-                  <RNText theme="secondary" font="outfitsemi" size="lg">
-                    ₦
-                  </RNText>
-
-                  <RNText theme="black" font="outfitsemi" size="lg">
-                    {toggleBalance
-                      ? "XXX"
-                      : formatAmount(walletData?.data?.availableBalance || 0)}
-                  </RNText>
-                  <AntDesign
-                    name="eye"
-                    size={18}
-                    color={colors.secondary}
-                    onPress={() => settoggleBalance(!toggleBalance)}
-                  />
-                </View>
-              )}
-            </View>
-            <View style={tw`-mt-2 relative`}>
-              <RNText theme="secondary" align="right" size="sm">
-                Wallet number:
-              </RNText>
-              <View style={tw`flex flex-row justify-end items-center -mt-2`}>
-                <RNText
-                  theme="black"
-                  font="outfitsemi"
-                  style={tw`text-[1.5rem]`}
-                >
-                  {walletData?.data?.accountNumber ?? "xxxx xxxx xx"}
-                </RNText>
-                <Ionicons
-                  name="copy"
-                  size={16}
-                  color={colors.secondary}
-                  onPress={() =>
-                    copyToClipboard(
-                      walletData?.data?.accountNumber ?? "xxxx xxxx xx"
-                    )
-                  }
-                />
-              </View>
-            </View>
+              </>
+            )}
           </View>
-          <View
-            style={tw`mr-3 flex flex-col min-h-[${responsiveScreenHeight(
-              4
-            )}] w-[${responsiveScreenWidth(
-              21
-            )}] justify-between bg-[#EBF4FF] rounded-md p-4 pt-5 pb-2 relative`}
-          >
-            <Image
-              source={require("@/assets/images/cardicon.png")}
-              style={tw`absolute`}
-            />
-            <View style={tw`w-full`}>
-              <View
-                style={tw`flex flex-row items-center w-full justify-between mb-3`}
-              >
-                <RNText theme="black" size="md" font="outfitbold">
-                  Outstanding balance
-                </RNText>
-              </View>
-              {walletFetching ? (
-                <AnimatedLottieView
-                  source={require("../../assets/animations/dotloader.json")}
-                  style={tw`w-[250px] h-10 absolute -left-[30%] top-6`}
-                  autoPlay
-                  resizeMode="cover"
-                />
-              ) : (
-                <View style={tw`flex flex-row items-center gap-x-2 `}>
-                  <RNText theme="secondary" font="outfitsemi" size="lg">
-                    ₦
-                  </RNText>
 
-                  <RNText theme="black" font="outfitsemi" size="lg">
-                    {toggleBalance
-                      ? "XXX"
-                      : formatAmount(walletData?.data?.credit?.dept || 0)}
-                  </RNText>
-                  <AntDesign
-                    name="eye"
-                    size={18}
-                    color={colors.secondary}
-                    onPress={() => settoggleBalance(!toggleBalance)}
-                  />
-                </View>
-              )}
-              <RNText
-                theme="secondary"
-                size="sm"
-                style={tw`leading-4 max-w-[90%]`}
-              >
-                The amount of money that is owed to Credx.
-              </RNText>
-            </View>
-          </View>
-        </RNScrollView>
-
-        <RNScrollView
-          style={tw`mt-3 h-full`}
-          refreshControl={
-            <RefreshControl
-              refreshing={walletDataLoading}
-              colors={[colors.primary]}
-              onRefresh={handleRefresh}
-            />
-          }
-        >
-          {/* Action buttons */}
-          <View style={tw`flex flex-row justify-between mt-2`}>
-            <RNButton
-              icon={
-                <View style={tw`rounded-full bg-[#FFFFFF20]`}>
-                  <AntDesign
-                    name="plus"
-                    color={"#ffffff"}
-                    size={16}
-                    style={tw`p-1`}
-                  />
-                </View>
-              }
-              title="Account"
-              style={tw`rounded-md h-12 w-[31%]`}
-              theme="black"
-              onPress={() =>
-                navigation.navigate("Account", {
-                  wallet: walletData,
-                })
-              }
-              debounceTime={1000}
-              textStyle={tw`text-sm`}
-            />
-            <RNButton
-              icon={
-                <View style={tw`rounded-full bg-[#FFFFFF20]`}>
-                  <AntDesign
-                    name="plus"
-                    color={"#ffffff"}
-                    size={16}
-                    style={tw`p-1`}
-                  />
-                </View>
-              }
-              title="Fund"
-              style={tw`rounded-md h-12 w-[31%]`}
-              theme="black"
-              navigate="ReceiveMoney"
-              debounceTime={1000}
-              textStyle={tw`text-sm`}
-            />
-            <RNButton
-              icon={
-                <View style={tw`rounded-full bg-[#FFFFFF20]`}>
-                  <Feather
-                    name="arrow-up-right"
-                    color={"#ffffff"}
-                    size={16}
-                    style={tw`p-1`}
-                  />
-                </View>
-              }
-              title="Send"
-              style={tw`rounded-md h-12 w-[31%]`}
-              theme="black"
-              navigate="SendMoney"
-              debounceTime={1000}
-              textStyle={tw`text-sm`}
-            />
-          </View>
-          {/* AWAITING HR APPROVAL */}
-          {eligibilityData?.data?.eligible === "PENDING" && (
-            <View
-              style={tw`rounded-md bg-[#E2EEFC] py-2 px-4 mt-3 w-full
-             mr-2`}
-            >
-              <View style={tw`flex flex-row items-center justify-between mb-2`}>
-                <View>
-                  <RNText style={tw`-mb-1`} font="outfitmedium" theme="primary">
-                    Loan Approval
-                  </RNText>
-                  <RNText size="sm" theme="black">
-                    Your loan application is being processed
-                  </RNText>
-                </View>
-                <Image source={require("@/assets/images/bag.png")} />
-              </View>
-              <View style={tw`h-2 bg-gray-300 rounded-full mb-2 relative`}>
-                <View
-                  style={[tw`h-full bg-red-500 rounded-full`, { width: `70%` }]}
-                />
-              </View>
-            </View>
-          )}
-          {/* AWAITING MANDATE ACTIVATION */}
-          {workData?.work?.status?.status === "PRNDING_MANDATE_ATIVATION" && workData?.work?.mandateStatus === "PENDING" && (
-            <View
-              style={tw`rounded-md bg-[#E2EEFC] py-2 px-4 mt-3 mb-2 w-full
-             mr-2`}
-            >
-              <View>
-                <RNText style={tw``} font="outfitmedium" theme="primary">
-                  Activate mandate
-                </RNText>
-                <RNText theme="black" size="sm" style={tw`mt-3 leading-[1rem]`}>
-                  We charge a fee to activate a mandate, enabling us to
-                  automatically debit your account if a loan payment defaults
-                </RNText>
+          <SectionContainer title="Quick actions">
+            <View style={tw`flex-row flex-wrap justify-between`}>
+              {quickActions.map((action) => (
                 <TouchableOpacity
-                  onPress={handleMandate}
-                  style={tw`mt-5 h-[52px] rounded-[4px] bg-black items-center justify-center w-full ${
-                    activateMandate01.isLoading ? "bg-[#DEE2ED]" : "bg-black"
-                  }`}
-                  disabled={activateMandate01.isLoading}
+                  key={action.label}
+                  onPress={action.onPress}
+                  style={tw`w-[48%] bg-white border border-[#E4E8F2] rounded-2xl p-4 mb-3`}
                 >
-                  {activateMandate01.isLoading ? (
-                    <ActivityIndicator color={colors.primary} />
-                  ) : (
-                    <RNText theme="white">Activate</RNText>
-                  )}
+                  <View
+                    style={tw`h-10 w-10 rounded-full bg-primary01 items-center justify-center mb-3`}
+                  >
+                    {action.icon}
+                  </View>
+                  <RNText font="outfitmedium">{action.label}</RNText>
+                  <RNText theme="secondary" size="sm" style={tw`mt-1`}>
+                    {action.description}
+                  </RNText>
                 </TouchableOpacity>
-              </View>
+              ))}
             </View>
-          )}
-          {creditLimit > 0 && (
-            <View
-              style={tw`rounded-md bg-[#0C142815] py-2 px-4 mt-3 w-full
-             mr-2`}
+          </SectionContainer>
+
+          {role === "employer" ? (
+            <SectionContainer
+              title="Team overview"
+              actionText="View all"
+              onActionPress={() => navigation.navigate("Attendance")}
             >
-              <View style={tw`flex flex-row items-center justify-between mb-2`}>
-                <View>
-                  <View>
-                    <RNText size="sm">Credit Left </RNText>
-                    <RNText
-                      style={tw`-mt-2 text-[1.4rem]`}
-                      font="outfitmedium"
-                      theme="black"
-                    >
-                      ₦{formatAmount(creditLeft ?? 0)}
-                    </RNText>
-                  </View>
-
-                  <View style={tw`mt-3`}>
-                    <RNText size="sm">Credit Taken </RNText>
-                    <RNText
-                      style={tw`-mt-2 text-[1.02rem]`}
-                      font="outfitmedium"
-                      theme="primary"
-                    >
-                      ₦{formatAmount(creditTaken ?? 0)}
-                    </RNText>
-                  </View>
-                </View>
-                <View style={tw`flex flex-col items-end`}>
-                  <Image source={require("@/assets/images/bag.png")} />
-                  <View style={tw`mt-1`}>
-                    <RNText size="sm" align="right">
-                      Credit Limit{" "}
-                    </RNText>
-                    <RNText
-                      style={tw`-mt-2 text-[1.02rem]`}
-                      font="outfitmedium"
-                      theme="primary"
-                    >
-                      ₦{formatAmount(creditLimit ?? 0)}
-                    </RNText>
-                  </View>
-                </View>
-              </View>
-
-              <View style={tw`h-3 bg-gray-300 rounded-full my-5 relative`}>
-                <View
-                  style={[
-                    tw`h-full bg-red-500 rounded-full`,
-                    { width: `${(creditTaken / creditLimit) * 100}%` },
-                  ]}
-                />
-              </View>
-            </View>
-          )}
-          {/* ONGOING LOANS */}
-          <View style={tw`w-full flex flex-col flex-1 mt-2 relative`}>
-            {loanHistory?.data?.data.filter(
-              (data: any) => data?.status?.status === "APPROVED"
-            )?.length > 0 && (
-              <View style={tw`w-full`}>
-                <View style={tw`flex flex-row items-center justify-between`}>
-                  <RNText style={tw`text-sm text-secondary100 mb-1`}>
-                    Ongoing loans
+              {visibleTeam.length === 0 ? (
+                <View style={tw`bg-white rounded-2xl p-4 border border-dashed border-[#D7DBE0]`}>
+                  <RNText theme="secondary" size="sm">
+                    Invite your first employee to start accruing attendance and payouts.
                   </RNText>
                 </View>
-                <RNScrollView horizontal>
-                  {loanHistory?.data?.data
-                    .filter((data: any) => data?.status?.status === "APPROVED")
-                    .map((loan: any, index: number) => {
-                      return (
-                        <View
-                          key={index}
-                          style={tw`rounded-md bg-[#0C142815] p-4 w-${responsiveScreenWidth(
-                            21
-                          )} mr-2`}
-                        >
-                          <View
-                            style={tw`flex flex-row items-center justify-between mb-2`}
-                          >
-                            <View>
-                              <RNText
-                                size="md"
-                                style={tw`-mb-1`}
-                                font="outfitmedium"
-                                theme="primary"
-                              >
-                                ₦{formatAmount(loan?.amount)}
-                              </RNText>
-                              <RNText size="sm">
-                                Duration:{" "}
-                                {`${loan?.tenors?.length} month${
-                                  loan?.tenors?.length > 1 ? "s" : ""
-                                }`}
-                              </RNText>
-                            </View>
-                            <Image
-                              source={require("@/assets/images/bag.png")}
-                            />
-                          </View>
-                          <RNText style={tw`text-sm text-secondary100 mb-1`}>
-                            Monthly repayment for ongoing plan
-                          </RNText>
-                          <View
-                            style={tw`flex flex-row items-center justify-between mb-0 rounded-full w-full h-[6px] relative mb-1 bg-[#75757530] z-50`}
-                          >
-                            <View
-                              style={tw`h-[7px] w-[7px] bg-danger rounded-full z-30`}
-                            />
-                            {loan?.tenors.map((_: any, index: number) => (
-                              <View
-                                key={index}
-                                style={tw`h-[7px] w-[7px] bg-danger rounded-full z-30`}
-                              />
-                            ))}
+              ) : (
+                visibleTeam.map((member) => (
+                  <View
+                    key={member.id}
+                    style={tw`flex-row justify-between items-center bg-white rounded-2xl p-4 mb-3 border border-[#EEF1F4]`}
+                  >
+                    <View>
+                      <RNText font="outfitmedium">{member.name}</RNText>
+                      <RNText theme="secondary" size="sm">
+                        Daily rate ₦{formatAmount(member.dailyRate)}
+                      </RNText>
+                    </View>
+                    <View style={tw`items-end`}>
+                      <RNText
+                        theme={
+                          member.todayStatus === "present" ? "success" : "secondary"
+                        }
+                        size="sm"
+                      >
+                        {member.todayStatus === "present" ? "Present" : member.todayStatus}
+                      </RNText>
+                      <RNText theme="secondary" size="sm">
+                        {member.autopayoutDestination === "wallet"
+                          ? "Wallet"
+                          : "Bank"}
+                      </RNText>
+                    </View>
+                  </View>
+                ))
+              )}
+              <View style={tw`bg-[#0D1B3D] rounded-2xl p-4 mt-2`}>
+                <RNText theme="white" font="outfitmedium">
+                  Attendance health
+                </RNText>
+                <RNText theme="white" size="sm" style={tw`mt-1 opacity-80`}>
+                  {presentSeven} of {sevenDayWindow.length} workdays marked present in the last week.
+                </RNText>
+              </View>
+            </SectionContainer>
+          ) : (
+            <SectionContainer
+              title="Recent attendance"
+              actionText="Open logs"
+              onActionPress={() => navigation.navigate("Attendance")}
+            >
+              {recentAttendance.length === 0 ? (
+                <View style={tw`bg-white rounded-2xl p-4 border border-dashed border-[#D7DBE0]`}>
+                  <RNText theme="secondary" size="sm">
+                    Clock in to start generating daily salary payouts.
+                  </RNText>
+                </View>
+              ) : (
+                recentAttendance.map((record) => (
+                  <View
+                    key={record.id}
+                    style={tw`flex-row justify-between items-center bg-white rounded-2xl p-4 mb-3 border border-[#EEF1F4]`}
+                  >
+                    <View>
+                      <RNText font="outfitmedium">
+                        {formatDateLong(record.date)}
+                      </RNText>
+                      <RNText theme="secondary" size="sm">
+                        {record.clockIn ? "Clocked in" : "Pending clock-in"}
+                      </RNText>
+                    </View>
+                    <View style={tw`items-end`}>
+                      <RNText
+                        theme={
+                          record.payout.status === "paid" ? "success" : "warning"
+                        }
+                        size="sm"
+                      >
+                        {record.payout.status === "paid" ? "Paid" : "Scheduled"}
+                      </RNText>
+                      <RNText theme="secondary" size="sm">
+                        ₦{formatAmount(record.payout.amount || dailyRate)}
+                      </RNText>
+                    </View>
+                  </View>
+                ))
+              )}
+            </SectionContainer>
+          )}
 
-                            {loan?.tenors.map((_: any, index: number) => {
-                              const total = loan?.tenors?.length;
-                              const unpaid = loan?.tenors?.filter(
-                                (data: any) =>
-                                  data?.status?.status !== "COMPLETED"
-                              )?.length;
-
-                              const dividend = ((total - unpaid) / total) * 100;
-
-                              return _.status.status === "COMPLETED" ? (
-                                <View
-                                  key={index}
-                                  style={tw`z-20 left-0 absolute -top-[0.1] h-[6px] w-[${Number(
-                                    dividend
-                                  )}%] bg-success rounded-full`}
-                                ></View>
-                              ) : (
-                                <View key={index} style={tw`z-40 absolute`} />
-                              );
-                            })}
-                          </View>
-                          <View
-                            style={tw`flex flex-row w-full items-center justify-between`}
-                          >
-                            <RNText style={tw``} size="sm">
-                              N0
-                            </RNText>
-                            {loan?.tenors.map((_: any, index: number) => {
-                              return (
-                                <View key={index} style={tw``}>
-                                  <RNText style={tw``} size="sm">
-                                    N{Math.round(_?.amount)}
-                                  </RNText>
-                                </View>
-                              );
-                            })}
-                          </View>
-                          <RNButton
-                            onPress={() =>
-                              navigation.navigate("LoanDetails", {
-                                loan: loan,
-                              })
-                            }
-                            title="View details"
-                            style={tw`rounded-full bg-transparent border border-primary h-10 mt-4`}
-                            textStyle={tw`text-primary`}
-                          />
-                        </View>
-                      );
-                    })
-                    .reverse()}
-                </RNScrollView>
+          <SectionContainer title="Payout timeline">
+            <View style={tw`bg-white rounded-2xl p-4 border border-[#EEF1F4]`}>
+              <View style={tw`flex-row justify-between items-center`}>
+                <RNText font="outfitmedium">
+                  {upcomingRun ? "Next auto payout" : "No scheduled payout"}
+                </RNText>
+                {upcomingRun && (
+                  <RNText theme="secondary" size="sm">
+                    {new Date(upcomingRun.date).toLocaleTimeString([], {
+                      hour: "2-digit",
+                      minute: "2-digit",
+                    })}
+                  </RNText>
+                )}
+              </View>
+              {upcomingRun ? (
+                <>
+                  <RNText theme="secondary" size="sm" style={tw`mt-1`}>
+                    ₦{formatAmount(upcomingRun.totalAmount)} • {upcomingRun.employees} employees •{" "}
+                    {upcomingRun.trigger === "auto" ? "Auto" : "Manual"}
+                  </RNText>
+                  <RNButton
+                    title="Mark once paid"
+                    onPress={() => navigation.navigate("Attendance")}
+                    style={tw`mt-3`}
+                  />
+                </>
+              ) : (
+                <RNText theme="secondary" size="sm" style={tw`mt-1`}>
+                  Payouts run automatically at {autopayoutTime}. Clock in to be included.
+                </RNText>
+              )}
+            </View>
+            {lastRun && (
+              <View style={tw`bg-white rounded-2xl p-4 border border-[#EEF1F4] mt-3`}>
+                <RNText font="outfitmedium">Last payout</RNText>
+                <RNText theme="secondary" size="sm" style={tw`mt-1`}>
+                  {formatDateLong(lastRun.date)} • ₦{formatAmount(lastRun.totalAmount)} paid to{" "}
+                  {lastRun.employees} team members
+                </RNText>
               </View>
             )}
-            {/* LINKS */}
-            {links.map(
-              ({ name, text, icon, url, bgColor, buttonText }, index) => {
-                return (
+          </SectionContainer>
+
+          <SectionContainer
+            title="Wallet & statements"
+            actionText="Transaction history"
+            onActionPress={() => navigation.navigate("TransactionHistory")}
+          >
+            <View style={tw`bg-white rounded-2xl p-4 border border-[#EEF1F4]`}>
+              <RNText theme="secondary" size="sm">
+                Monthly payout summary
+              </RNText>
+              <RNText font="outfitbold" size="lg">
+                ₦{formatAmount(company.monthlyPayout)}
+              </RNText>
+              <RNText theme="secondary" size="sm" style={tw`mt-1`}>
+                Based on all approved attendance and wallet debits.
+              </RNText>
+            </View>
+          </SectionContainer>
+
+          <SectionContainer title="Notifications">
+            {notifications.length === 0 ? (
+              <View style={tw`bg-white rounded-2xl p-4 border border-dashed border-[#D7DBE0]`}>
+                <RNText theme="secondary" size="sm">
+                  You’re all caught up. Clock-ins, payouts, and employer notices will appear here.
+                </RNText>
+              </View>
+            ) : (
+              notifications.slice(0, 4).map((note, index) => (
+                <View
+                  key={`${note}-${index}`}
+                  style={tw`flex-row items-start bg-white rounded-2xl p-4 mb-2 border border-[#EEF1F4]`}
+                >
                   <View
-                    key={index}
-                    style={tw`w-full flex flex-row justify-between items-center bg-white rounded-md py-3 px-2 mt-3 bg-[${bgColor}15] border border-[${bgColor}90]`}
+                    style={tw`h-8 w-8 rounded-full bg-primary01 items-center justify-center mr-3`}
                   >
-                    <View style={tw`flex flex-row items-center`}>
-                      <View
-                        style={tw`mr-2 h-10 w-10 rounded-full bg-[${bgColor}20] flex items-center justify-center`}
-                      >
-                        {icon}
-                      </View>
-                      {/* @ts-ignore */}
-                      <View style={tw`w-[68%]`}>
-                        <RNText style={tw``} font="outfitmedium">
-                          {name}
-                        </RNText>
-                        {/* <RNText style={tw`text-[#656565] mt-1 text-[0.95rem] `}>
-                          {text}
-                        </RNText> */}
-                      </View>
-                    </View>
-                    <RNButton
-                      title={buttonText}
-                      onPress={url}
-                      theme="black"
-                      style={tw`rounded-md h-8 w-auto px-3 rounded-full absolute z-40 right-2`}
-                      textStyle={tw`text-sm`}
-                    />
+                    <Ionicons name="notifications-outline" size={16} color={colors.primary} />
                   </View>
-                );
-              }
+                  <RNText style={tw`flex-1`}>{note}</RNText>
+                </View>
+              ))
             )}
-          </View>
-        </RNScrollView>
-      </View>
+          </SectionContainer>
+
+          <SectionContainer title="How Memonies works">
+            <View style={tw`bg-white rounded-2xl p-4 border border-[#EEF1F4]`}>
+              <EdsGuidelines />
+            </View>
+          </SectionContainer>
+        </View>
+      </RNScrollView>
     </Layout>
   );
 };
 
 export default Home;
+
+

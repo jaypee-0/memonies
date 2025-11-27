@@ -6,6 +6,7 @@ import { createBottomTabNavigator } from '@react-navigation/bottom-tabs';
 import { moderateVerticalScale } from 'react-native-size-matters';
 import { responsiveScreenFontSize } from 'react-native-responsive-dimensions';
 import { colors } from '@/theme/colors';
+import { useEdsBootstrap } from '@/hooks/useEdsBootstrap';
 import {
   Home,
   Profile,
@@ -45,6 +46,11 @@ import NetInfo from '@react-native-community/netinfo';
 import AttendanceIcon from '@/assets/icons/BottomTabs/AttendanceIcon';
 
 export default function Main() {
+  const { refreshAll } = useEdsBootstrap();
+
+  React.useEffect(() => {
+    refreshAll();
+  }, [refreshAll]);
   
   const config = {
     screens: {

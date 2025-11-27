@@ -7,7 +7,7 @@ import tw from "@/lib/tailwind";
 import { addCardApi } from "@/utils/api";
 import axios from "axios";
 import React from "react";
-import { Alert, Image, TouchableOpacity, View } from "react-native";
+import { Alert, View } from "react-native";
 import { useMutation } from "react-query";
 import { useDeviceContext } from "twrnc";
 
@@ -32,46 +32,12 @@ const AddCard = () => {
     },
   });
 
-  const [userCredentials, setuserCredentials] = React.useReducer(
-    (
-      prev: Record<string, string | number | boolean>,
-      next: Record<string, string | number | boolean>
-    ) => ({
-      ...prev,
-      ...next,
-    }),
-    {
-      orgName: "",
-      role: "",
-      salary: "",
-      staffID: "",
-      loanAmount: "",
-      loanDuration: "",
-      cardNo: "",
-      expiryDate: "",
-      cvv: "",
-      email: "",
-      isChecked: false,
-      accNo: "",
-      accountName: "",
-      accountNameErr: "",
-      bankName: "",
-      bankCode: "",
-    }
-  );
-  const handleChange = (name: any, value: any) => {
-    setuserCredentials({
-      ...userCredentials,
-      [name]: value,
-    });
-  };
-
   return (
     <Layout header headerCenterText="Add card">
       <View style={tw`flex-1`}>
         <RNText size="sm" theme="secondary">
-          Add <RNText theme="primary">N1.00 </RNText>
-          to your Memonies wallet for bank card verification
+          Add <RNText theme="primary">₦1.00 </RNText>
+          to your Memonies wallet so we can verify this card and route automated salary payouts.
         </RNText>
         <RNScrollView style={tw`flex-1`} containterStyle={tw``}>
           <ATMDetailsCard from="AddCard" />
