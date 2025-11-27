@@ -1,0 +1,33 @@
+name: Release to staging
+on:
+  workflow_dispatch:
+  push:
+    branches:
+      - staging01
+jobs:
+  build:
+    name: Install and build
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v3
+      - uses: actions/setup-node@v3
+        with:
+          node-version: 18.x
+          cache: npm
+      - name: Setup Expo and EAS
+        uses: expo/expo-github-action@8.2.0
+        with:
+          eas-version: latest
+          token: ${{ secrets.EXPO_TOKEN }}
+      - name: Install dependencies
+        run: npm ci
+      # - name: Build on EAS for android
+      #   run: eas build --profile production --platform android
+      # - name: Release to internal testers on play store
+      #   run: eas submit --platform android --profile staging 
+      # - name: Build on EAS for ios
+      #   run: eas build --profile staging --platform staging
+      # - name: Build on EAS for ios
+      #   run: eas submit -p ios --profile staging
+      - name: Release an update
+        run: eas update --branch production --message "added transaction pin change"

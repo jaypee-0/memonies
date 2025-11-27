@@ -1,0 +1,89 @@
+{
+  "expo": {
+    "name": "Memonies",
+    "slug": "memonies",
+    "version": "1.0.0",
+    "orientation": "portrait",
+    "icon": "./src/assets/icon.png",
+    "userInterfaceStyle": "light",
+    "splash": {
+      "image": "./src/assets/splash.png",
+      "resizeMode": "contain",
+      "backgroundColor": "#1B1039"
+    },
+    "assetBundlePatterns": [
+      "**/*"
+    ],
+    "experiments": {
+      "tsconfigPaths": true
+    },
+    "jsEngine": "hermes",
+    "android": {
+      "package": "com.memonies.app",
+      "adaptiveIcon": {
+        "foregroundImage": "./src/assets/adaptive-icon.png",
+        "backgroundColor": "#1B1039"
+      },
+      "versionCode": 62,
+      "minSdkVersion": 29,
+      "permissions": [
+        "com.google.android.gms.permission.AD_ID",
+        "android.permission.ACCESS_COARSE_LOCATION",
+        "android.permission.ACCESS_FINE_LOCATION"
+      ],
+      "blockedPermissions": [
+        "android.permission.READ_EXTERNAL_STORAGE",
+        "android.permission.WRITE_EXTERNAL_STORAGE"
+      ]
+    },
+    "ios": {
+      "bundleIdentifier": "com.memonies.app",
+      "supportsTablet": false,
+      "infoPlist": {
+        "NSUserTrackingUsageDescription": "Memonies uses device identifiers to attribute installs and keep experiences smooth. Data never gets sold to ad networks.",
+        "ITSAppUsesNonExemptEncryption": false,
+        "NSLocationWhenInUseUsageDescription": "Memonies captures your location during clock in/out to keep attendance accurate for payroll audits.",
+        "NSLocationAlwaysUsageDescription": "Memonies uses background location to remind you to clock out when shifts end.",
+        "NSLocationAlwaysAndWhenInUseUsageDescription": "Memonies attaches a GPS snapshot to every attendance event for employer compliance."
+      },
+      "buildNumber": "1",
+      "jsEngine": "jsc"
+    },
+    "plugins": [
+      "expo-font",
+      [
+        "expo-tracking-transparency",
+        {
+          "userTrackingPermission": "Memonies uses device identifiers to understand which campaigns drive installs. Your payroll data stays private and is never sold."
+        }
+      ],
+      [
+        "expo-notifications",
+        {
+          "icon": "./assets/icon.png",
+          "color": "#ffffff",
+          "sounds": [
+            "./assets/audio/lock.wav"
+          ],
+          "mode": "production"
+        }
+      ],
+      [
+        "expo-local-authentication",
+        {
+          "faceIDPermission": "Allow Memonies to use Face ID for faster payroll approvals."
+        }
+      ]
+    ],
+    "extra": {
+      "eas": {
+        "projectId": "3e7dffc7-7379-4dbc-9a55-7e78c9f5b707"
+      }
+    },
+    "owner": "memonies",
+    "runtimeVersion": "1.0.0",
+    "updates": {
+      "url": "https://u.expo.dev/3e7dffc7-7379-4dbc-9a55-7e78c9f5b707"
+    }
+  }
+}

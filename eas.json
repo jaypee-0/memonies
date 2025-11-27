@@ -1,0 +1,63 @@
+{
+  "cli": {
+    "version": ">= 5.9.3"
+  },
+  "build": {
+    "development": {
+      "developmentClient": true,
+      "distribution": "internal",
+      "ios": {
+        "resourceClass": "m-medium",
+        "simulator": true
+      },
+      "channel": "development",
+      "env": {
+        "EXPO_PUBLIC_API_BASE_URI": "https://",
+        "EXPO_PUBLIC_STAGING_API_BASE_URI": "https://"
+      }
+    },
+    "staging": {
+      "distribution": "store",
+      "env": {
+        "EXPO_PUBLIC_API_BASE_URI": "https://",
+        "EXPO_PUBLIC_STAGING_API_BASE_URI": "https://"
+      },
+      "android": {
+        "buildType": "apk",
+        "gradleCommand": ":app:assembleRelease"
+      },
+      "ios": {
+        "resourceClass": "m-medium"
+      },
+      "channel": "staging"
+    },
+    "production": {
+      "distribution": "store",
+      "channel": "production",
+      "env": {
+        "EXPO_PUBLIC_API_BASE_URI": "https://",
+        "EXPO_PUBLIC_STAGING_API_BASE_URI": "https://"
+      },
+      "ios": {
+        "resourceClass": "m-medium",
+        "image": "macos-sequoia-15.3-xcode-16.2"
+      }
+    }
+  },
+  "submit": {
+    "production": {
+      "android": {
+        "serviceAccountKeyPath": "./memonies_service.json",
+        "track": "internal"
+      },
+      "ios": {
+        "appleId": "eraofdozie@gmail.com",
+        "ascAppId": "6745017170",
+        "appleTeamId": "USR2CS2B97"
+        // "appleId": "davido@buytaja.com",
+        // "ascAppId": "6739233550",
+        // "appleTeamId": "M6PQD64K5P"
+      }
+    }
+  }
+}

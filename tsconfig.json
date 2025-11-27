@@ -1,0 +1,33 @@
+{
+  "compilerOptions": {
+    "allowJs": true,
+    "allowSyntheticDefaultImports": true,
+    "esModuleInterop": true,
+    "isolatedModules": true,
+    "jsx": "react-native",
+    "lib": ["es6"],
+    "moduleResolution": "node",
+    "noEmit": true,
+    "strict": true,
+    "target": "es2017",
+    "baseUrl": ".",
+    "paths": {
+      "@/*": ["./src/*"],
+      "@/shared": ["./src/shared/*"],
+      "@/components": ["./src/components/*"],
+      "@/screens": ["./src/screens/*"],
+      "@/redux": ["./src/redux/*"],
+      "@/lib": ["src/lib/*"],
+      "@/assets": ["./src/assets/*"],
+      "@/services": ["./src/services/*"],
+      "@/navigation": ["./src/navigation"],
+      "@/utils": ["./src/utils"],
+      "@/hooks": ["./src/hooks"],
+      "@/theme": ["./src/theme/*"],
+      "@/images": ["./src/assets/images/*"],
+      "@/data": ["src/data"]
+    }
+  },
+  "exclude": ["node_modules"],
+  "extends": "expo/tsconfig.base"
+}
