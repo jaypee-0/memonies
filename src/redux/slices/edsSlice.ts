@@ -87,6 +87,16 @@ export interface EdsState {
   notifications: string[];
 }
 
+type SummaryHydrationPayload = Partial<
+  Omit<EdsState, 'company' | 'attendance' | 'team' | 'payouts' | 'notifications'>
+> & {
+  company?: Partial<CompanyProfile>;
+  attendance?: AttendanceEntry[];
+  team?: TeamMember[];
+  payouts?: Partial<EdsState['payouts']>;
+  notifications?: string[];
+};
+
 const toDateKey = (iso = new Date().toISOString()) => iso.slice(0, 10);
 
 const buildInitialState = (): EdsState => ({
@@ -236,6 +246,9 @@ export const edsSlice = createSlice({
     setDailyRate: (state, action: PayloadAction<number>) => {
       state.dailyRate = action.payload;
     },
+    setTodaysEarning: (state, action: PayloadAction<number>) => {
+      state.todaysEarning = action.payload;
+    },
     setAutopayoutDestination: (state, action: PayloadAction<Destination>) => {
       state.autopayoutDestination = action.payload;
     },
@@ -355,6 +368,62 @@ export const edsSlice = createSlice({
     setNotifications: (state, action: PayloadAction<string[]>) => {
       state.notifications = action.payload;
     },
+    applySummarySnapshot: (state, action: PayloadAction<SummaryHydrationPayload>) => {
+      const payload = action.payload;
+      if (payload.role) {
+        state.role = payload.role;
+      }
+      if (typeof payload.dailyRate === 'number') {
+        state.dailyRate = payload.dailyRate;
+      }
+      if (typeof payload.todaysEarning === 'number') {
+        state.todaysEarning = payload.todaysEarning;
+      }
+      if (payload.autopayoutDestination) {
+        state.autopayoutDestination = payload.autopayoutDestination;
+      }
+      if (payload.autopayoutTime) {
+        state.autopayoutTime = payload.autopayoutTime;
+        state.company.autopayoutTime = payload.autopayoutTime;
+      }
+      if (typeof payload.autopayoutEnabled === 'boolean') {
+        state.autopayoutEnabled = payload.autopayoutEnabled;
+        state.company.autopayoutEnabled = payload.autopayoutEnabled;
+      }
+      if (typeof payload.gpsRequired === 'boolean') {
+        state.gpsRequired = payload.gpsRequired;
+      }
+      if (payload.company) {
+        state.company = { ...state.company, ...payload.company };
+      }
+      if (payload.attendance) {
+        state.attendance = payload.attendance;
+      }
+      if (payload.team) {
+        state.team = payload.team;
+        state.company.dailyObligation = payload.team.reduce(
+          (sum, member) => sum + member.dailyRate,
+          0
+        );
+      }
+      if (payload.payouts) {
+        state.payouts = {
+          upcoming: payload.payouts.upcoming ?? state.payouts.upcoming,
+          history: payload.payouts.history ?? state.payouts.history,
+        };
+      }
+      if (payload.notifications) {
+        state.notifications = payload.notifications;
+      }
+      if (
+        payload.company?.walletBalance !== undefined &&
+        payload.company.walletBalance < state.company.dailyObligation
+      ) {
+        state.company.walletShortfall = state.company.dailyObligation - payload.company.walletBalance;
+      } else if (payload.company?.walletBalance !== undefined) {
+        state.company.walletShortfall = 0;
+      }
+    },
   },
 });
 
@@ -362,6 +431,7 @@ export const {
   resetEdsState,
   setRole,
   setDailyRate,
+  setTodaysEarning,
   setAutopayoutDestination,
   setAutopayoutTime,
   toggleAutoPayout,
@@ -377,6 +447,7 @@ export const {
   schedulePayoutRun,
   recordPayoutCompletion,
   setNotifications,
+  applySummarySnapshot,
 } = edsSlice.actions;
 
 export default edsSlice.reducer;
